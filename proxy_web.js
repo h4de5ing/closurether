@@ -38,6 +38,7 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 				clientReq.headers['host'] + clientReq.url,
 				newUrl
 			);
+			return;
 		}
 	}
 

@@ -29,9 +29,9 @@ var INJECT_JS;
 //   当然实际不用这个文件名，而是伪装成其他的url，例如运营商的广告^_^
 //   具体INJECT_URL值可以在config.json里配置
 //
-var INJECT_FILE = 'asset/inject.js';
+var INJECT_FILE = './asset/inject.js';
 var INJECT_URL = config['inject_url'].replace('http://', '');
-
+console.log(process.cwd());
 
 fs.watch(INJECT_FILE, function() {
 	// 实时修改生效
@@ -49,8 +49,10 @@ function updateInjectJs() {
 
 
 // 载入常用脚本库url
+var LIB_LIST = './asset/list.txt';
+
 function parseList() {
-	jslib_list = Read('asset/list.txt').split('\n');
+	jslib_list = Read(LIB_LIST).split('\n');
 
 	jslib_list.forEach(function(url) {
 		jslib_map[url] = true;

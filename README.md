@@ -1,7 +1,7 @@
 Closurether
 =========
 
-##### A net network traffic hijack script, including:
+##### A network traffic hijack script, including:
 
   - DNS hijack
   - html code inject

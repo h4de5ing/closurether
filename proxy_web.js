@@ -15,15 +15,13 @@ var https_url = {};
  * 处理代理响应
  */
 function proxyResponse(clientReq, clientRes, serverRes, secure) {
-	//console.log(serverRes.statusCode, serverRes.headers);
-
 	//
 	// 检测是否重定向到https站点
 	//
 	if (serverRes.statusCode == 302) {
-		var newUrl = serverRes.headers['location'];
+		var newUrl = serverRes.headers['location'] || '';
 
-		if (newUrl && newUrl.substr(0, 8) == 'https://') {
+		if (newUrl.substr(0, 8) == 'https://') {
 			var url = newUrl.substr(8);
 			https_url[url] = true;
 
@@ -31,6 +29,10 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 			clientReq.url = newUrl.substr(pos);
 			clientReq.headers['host'] = newUrl.substring(8, pos);
 
+			//
+			// 直接返回给用户重定向后的https页面内容
+			// 当然，用户的地址栏里还是http://开头的
+			//
 			proxyRequest(clientReq, clientRes);
 			clientReq.emit('end');
 
@@ -54,7 +56,10 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 	}
 
 	//
-	// 不是html文件直接转发
+	// 不是html文件直接管道转发。
+	//
+	//   很多网站使用gzip+chunk传输网页，并且使用gbk编码，
+	//   因此必须全部接收完才能注入。
 	//
 	var content_type = resHeader['content-type'] || '';
 	var mime = content_type.split(';')[0];
@@ -91,7 +96,7 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 
 	stream.on('end', function() {
 		//
-		// 网页注入！
+		// 整个网页接收完成，注入！
 		//
 		var charset = content_type.split('charset=')[1];
 		data = inject.injectHtml(data, charset, secure);

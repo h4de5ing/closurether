@@ -27,16 +27,20 @@ var qid_addr = [],
 
 
 
-function buildReply(buf, ipBuf) {
-	var ret = new Buffer(buf.length + 16);
-	ipBuf.copy(bufAns, +12);
+function buildReply(bufReq, ipBuf) {
+	//
+	// DNS回复包和请求包 前面部分相同，
+	// 所以可在请求包的基础上扩充。
+	//
+	var reply = new Buffer(bufReq.length + 16);
+	bufReq.copy(reply);					// 前面部分（和请求的一样）
 
-	buf.copy(ret);					// response part
-	bufAns.copy(ret, buf.length);	// answer part
+	ipBuf.copy(bufAns, +12);			// 填充我们的IP地址
+	bufAns.copy(reply, bufReq.length);	// 后面部分（bufAns数据）
 
-	ret.writeUInt16BE(0x8180, +2);	// [02~03] flags
-	ret.writeUInt16BE(0x0001, +6);	// [06~07] answer-couter
-	return ret;
+	reply.writeUInt16BE(0x8180, +2);	// [02~03] flags
+	reply.writeUInt16BE(0x0001, +6);	// [06~07] answer-couter
+	return reply;
 }
 
 

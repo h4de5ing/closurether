@@ -31,7 +31,7 @@ var INJECT_JS;
 //
 var INJECT_FILE = './asset/inject.js';
 var INJECT_URL = config['inject_url'].replace('http://', '');
-console.log(process.cwd());
+
 
 fs.watch(INJECT_FILE, function() {
 	// 实时修改生效

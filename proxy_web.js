@@ -14,7 +14,7 @@ var https_url = {};
 /**
  * 处理代理响应
  */
-function proxyResponse(clientReq, clientRes, serverRes, secure) {
+function proxyResponse(clientReq, clientRes, serverRes) {
 	//
 	// 检测是否重定向到https站点
 	//
@@ -99,7 +99,7 @@ function proxyResponse(clientReq, clientRes, serverRes, secure) {
 		// 整个网页接收完成，注入！
 		//
 		var charset = content_type.split('charset=')[1];
-		data = inject.injectHtml(data, charset, secure);
+		data = inject.injectHtml(data, charset);
 
 		//
 		// 返回注入后的网页（尽可能压缩）
@@ -193,7 +193,7 @@ function proxyRequest(clientReq, clientRes) {
 	};
 
 	var proxy = request(options, function(serverRes) {
-		proxyResponse(clientReq, clientRes, serverRes, secure);
+		proxyResponse(clientReq, clientRes, serverRes);
 	});
 
 	proxy.on('error', function() {

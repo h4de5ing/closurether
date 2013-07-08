@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 var proxyDns = require('./proxy_dns.js'),
 	proxyWeb = require('./proxy_web.js'),

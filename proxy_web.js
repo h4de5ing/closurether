@@ -21,7 +21,8 @@ function proxyResponse(clientReq, clientRes, serverRes) {
 	if (serverRes.statusCode == 302) {
 		var newUrl = serverRes.headers['location'] || '';
 
-		if (newUrl.substr(0, 8) == 'https://') {
+		if (/^https:\/\//i.test(newUrl)) {
+			// “https://” 后面部分
 			var url = newUrl.substr(8);
 			https_url[url] = true;
 
@@ -31,7 +32,7 @@ function proxyResponse(clientReq, clientRes, serverRes) {
 
 			//
 			// 直接返回给用户重定向后的https页面内容
-			// 当然，用户的地址栏里还是http://开头的
+			//   重复利用这个clientReq，再请求一次
 			//
 			proxyRequest(clientReq, clientRes);
 			clientReq.emit('end');
@@ -155,13 +156,13 @@ function proxyRequest(clientReq, clientRes) {
 	var referer = reqHeader['referer'];
 	if (referer) {
 		//
-		// 防止referer暴露来源页，替换其中的http为https
+		// 防止referer暴露来源页，替换http://为https://
 		//
 		var refUrl = referer.split('//')[1];
 
 		fromHttpsPage = https_url[refUrl];
 		if (fromHttpsPage) {
-			referer = referer.replace('http', 'https');
+			referer = 'https://' + refUrl;
 		}
 	}
 

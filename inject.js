@@ -8,7 +8,7 @@ var proxyDns = require('./proxy_dns.js'),
 
 
 function Read(path) {
-	return fs.readFileSync(path, {encoding: 'utf8'})
+	return fs.readFileSync(path) + '';
 }
 
 
@@ -119,12 +119,9 @@ exports.injectHtml = function(html, charset) {
 	//
 	charset = charset ? charset.toLowerCase() : 'utf-8';
 
-	if (charset != 'utf-8') {
-		html = iconv.decode(html, charset);
-	}
-	else {
-		html = str;
-	}
+	html = (charset == 'utf-8')
+			? str
+			: iconv.decode(html, charset);
 
 	//
 	// 尝试在 </title>, <body>, </html> 标签后注入
@@ -143,11 +140,7 @@ exports.injectHtml = function(html, charset) {
 	//
 	// 转回二进制数据
 	//
-	if (charset != 'utf-8') {
-		html = iconv.encode(html, charset);
-	}
-	else {
-		html = new Buffer(html);
-	}
-	return html;
+	return (charset == 'utf-8')
+		? new Buffer(html)
+		: iconv.encode(html, charset);
 }

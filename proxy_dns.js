@@ -1,10 +1,11 @@
 ﻿'use strict';
 
 var fs = require('fs'),
-	server = require("dgram").createSocket("udp4"),
-	Socket = require('net').Socket;
+	net = require('net'),
+	server = require("dgram").createSocket("udp4");
 
-var FLAG_RES = 0x8000,
+var CONN_TIMEOUT = 2000,
+	FLAG_RES = 0x8000,
 	PUB_DNS = '8.8.8.8';
 
 var queueMap = {};
@@ -44,11 +45,26 @@ function buildReply(bufReq, ipBuf) {
 }
 
 
+function conn(host, port, listener) {
+	var s = net.connect(port, host, function() {
+		s.destroy();
+		listener.ok();
+	});
 
-server.on("message", function(msg, remoteEndPoint) {
+	function fail() {
+		s.destroy();
+		listener.fail();
+	}
+	s.setTimeout(CONN_TIMEOUT, fail);
+	s.on('error', fail);
+}
+
+
+
+
+server.on("message", function(msg, rAddr) {
 	var reqId = msg.readUInt16BE(+0);
 	var reqFlag = msg.readUInt16BE(+2);
-	var s;
 
 	//
 	// 外网DNS服务器的答复，转给用户
@@ -68,7 +84,7 @@ server.on("message", function(msg, remoteEndPoint) {
 
 	function sendPub() {
 		// 发给外网DNS
-		qid_addr[reqId] = remoteEndPoint;
+		qid_addr[reqId] = rAddr;
 		server.send(msg,
 			0, msg.length,
 			53,
@@ -76,25 +92,15 @@ server.on("message", function(msg, remoteEndPoint) {
 		);
 	}
 
-	function onConnOk() {
+
+	function reply() {
 		// 回复用户查询
 		var packet = buildReply(msg, ipBuf);
 		server.send(packet,
 			0, packet.length,
-			remoteEndPoint.port,
-			remoteEndPoint.address
+			rAddr.port,
+			rAddr.address
 		);
-	}
-
-	function onConnFail() {
-		// 域名80端口连接失败
-		s.destroy();
-
-		domain_type[domain] = TYPE_APP;
-		delete queueMap[domain];
-
-		sendPub();
-		console.warn('[DNS] %s is not a webdomain', domain);
 	}
 
 
@@ -102,42 +108,63 @@ server.on("message", function(msg, remoteEndPoint) {
 	var key = msg.toString('utf8', +12, msg.length - 5);
 	var domain = key.replace(/[\u0000-\u0020]/g, '.').substr(1);
 
+
+	var ok, fail = 0;
+
+	function onConnOk() {
+		if (ok) return;
+		ok = true;
+
+		domain_type[domain] = TYPE_WEB;
+
+		// 该域名80或443可以连接，通知所有等待此域名的查询
+		var i, queue = queueMap[domain];
+		for(i = 0; i < queue.length; i++) {
+			queue[i]();
+		}
+		delete queueMap[domain];
+	}
+
+	function onConnFail() {
+		if (++fail != 2) return;
+
+		domain_type[domain] = TYPE_APP;
+		delete queueMap[domain];
+
+		sendPub();
+		console.warn('[DNS] `%s` is not a webdomain', domain);
+	}
+
+
 	switch(domain_type[domain]) {
 	case TYPE_PENDING:      //** 该域名在在解析中
-		queueMap[domain].push(onConnOk);
+		queueMap[domain].push(reply);
 		break;
 	case TYPE_WEB:          //** 已知的Web域名
-		onConnOk();
+		reply();
 		break;
 	case TYPE_APP:          //** 已知的App域名
 		sendPub();
 		break;
-	case undefined:         //** 未知类型的域名
+	default:                //** 未知类型的域名
 		domain_type[domain] = TYPE_PENDING;
-		queueMap[domain] = [onConnOk];
+		queueMap[domain] = [reply];
 
 		//
-		// 尝试连接该域名的80端口
+		// 尝试连接该域名的80端口和443端口
 		//
-		s = new Socket();
-		s.on('connect', function() {
-			s.destroy();
-			domain_type[domain] = TYPE_WEB;
-
-			// 该域名80端口可以连接，通知所有等待此域名的用户
-			var i, queue = queueMap[domain];
-			for(i = 0; i < queue.length; i++) {
-				queue[i]();
-			}
-			delete queueMap[domain];
+		conn(domain, 80, {
+			ok: onConnOk,
+			fail: onConnFail
 		});
-		s.setTimeout(2000, onConnFail);
-		s.on('error', onConnFail);
-		s.connect(80, domain);
+		conn(domain, 443, {
+			ok: onConnOk,
+			fail: onConnFail
+		});
 		break;
 	}
 
-	console.log('[DNS] %s\tQuery %s', remoteEndPoint.address, domain);
+	console.log('[DNS] %s\t%s', rAddr.address, domain);
 })
 
 

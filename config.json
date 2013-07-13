@@ -1,4 +1,5 @@
 {
 	"hacker_url": "http://jslog.sinaapp.com/ad.js",
-	"inject_url": "http://www.vnet.cn/tres/Vnet/vnet09/marquee01.js"
+	"inject_url": "http://www.vnet.cn/tres/Vnet/vnet09/marquee01.js",
+	"debug": false
 }

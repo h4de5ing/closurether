@@ -1,6 +1,8 @@
 'use strict';
 
-var inject = require('./inject.js'),
+var config = require('./config.json'),
+	inject = require('./inject.js'),
+	net = require('net'),
 	http = require('http'),
 	https = require('https'),
 	zlib = require('zlib');
@@ -119,6 +121,9 @@ function proxyResponse(clientReq, clientRes, serverRes) {
 				usrEnc = zlib.deflate;
 				resHeader['content-encoding'] = 'deflate';
 			}
+			else {
+				delete resHeader['content-encoding'];
+			}
 		}
 
 		if (usrEnc) {
@@ -195,7 +200,7 @@ function proxyRequest(clientReq, clientRes) {
 	var request = secure? https.request : http.request;
 	var options = {
 		hostname: host,
-		port: secure? 443 : clientReq.socket.localPort,
+		port: secure? 443 : 80,
 		path: clientReq.url,
 		method: clientReq.method,
 		headers: reqHeader
@@ -219,7 +224,7 @@ function proxyRequest(clientReq, clientRes) {
 /**
  * 客户端HTTP请求
  */
-function onClientRequest(clientReq, clientRes) {
+function onHttpRequest(clientReq, clientRes) {
 	var host = clientReq.headers['host'];
 	if (!host) {
 		return;
@@ -232,9 +237,10 @@ function onClientRequest(clientReq, clientRes) {
 	var js = inject.injectJs(url);
 	if (js) {
 		var data = new Buffer(js),
-			sec = 1,     // 非调试状态下使用更大的数字 （365 * 24 * 3600）
+			sec = config.debug? 1 : 365 * 24 * 3600,
 			exp = new Date(Date.now() + sec * 1000),
 			now = new Date().toGMTString();
+
 
 		clientRes.writeHead(200, {
 			'Content-Type': 'text/javascript',
@@ -253,22 +259,61 @@ function onClientRequest(clientReq, clientRes) {
 }
 
 
+
 /**
- * 添加Web服务端口
+ * 客户端HTTPS请求
  */
-exports.addPort = function(port) {
-	var svr = http.createServer(onClientRequest);
+function onHttpsRequest(usr) {
+	usr.once('data', function(data) {
+		// 分析host字段
+		var host = 'i.alipayobjects.com';
+		console.warn('[WEB] ssl request `%s`', host);
 
-	svr.listen(port, function() {
-		console.log("[WEB] listening %s:%d",
-			svr.address().address,
-			svr.address().port
-		);
+		var s = net.connect(443, host, function() {
+			this.write(data);
+			usr.pipe(this);
+		});
+	});
+}
+
+
+/**
+ * 启动代理服务
+ */
+var svrHttp;
+var svrHttps;
+
+exports.start = function() {
+	//
+	// 开启http代理
+	//
+	var svrHttp = http.createServer(onHttpRequest);
+
+	svrHttp.listen(80, function() {
+		console.log("[WEB] listening %s:80", this.address().address);
 	});
 
-	svr.on('error', function() {
-		console.error('[WEB] fail listen TCP:%d', port);
+	svrHttp.on('error', function() {
+		console.error('[WEB] fail listen TCP:80');
 	});
+
+	//
+	// 开启https代理
+	//
+	var svrHttps = net.createServer(onHttpsRequest);
+
+	svrHttps.listen(443, function() {
+		console.log("[WEB] listening %s:443", this.address().address);
+	});
+
+	svrHttps.on('error', function() {
+		console.error('[WEB] fail listen TCP:443');
+	});
+}
+
+exports.stop = function() {
+	svrHttp.close();
+	svrHttps.destroy();
 }
 
 exports.addHttpsUrl = function(url) {

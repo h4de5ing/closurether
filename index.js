@@ -1,9 +1,11 @@
 'use strict';
 
-var proxyDns = require('./proxy_dns.js'),
+var config = require('./config.json'),
+	inject = require('./inject.js'),
+	proxyDns = require('./proxy_dns.js'),
 	proxyWeb = require('./proxy_web.js'),
-	os = require('os');
-
+	os = require('os'),
+	fs = require('fs');
 
 
 function GetLocalIP() {
@@ -14,28 +16,50 @@ function GetLocalIP() {
 
 		for(var j in adapters) {
 			var cfg = adapters[j];
-			if (cfg.family !== 'IPv4')
+			if (cfg.family != 'IPv4')
 				continue;
 
-			if (! /^(0|127|169.254)/.test(cfg.address))
+			if (! /^(0|127|169)/.test(cfg.address))
 				return cfg.address;
 		}
 	}
 }
 
-function main() {
+
+function printUsage() {
+	console.log(fs.readFileSync('./usage.txt') + '');
+	process.exit(0);
+}
+
+
+function main(argv) {
+	for(var i = 0, n = argv.length; i < n; i++) {
+		switch(argv[i]) {
+		case '-d':
+		case '--debug':
+			config.debug = true;
+			break;
+
+		case '-h':
+		case '--help':
+			printUsage();
+			break;
+		}
+	}
+
 	var localIP = GetLocalIP();
 	if (!localIP) {
 		console.error('[SYS] cannot get local ip!');
 		return;
 	}
-
 	console.log('[SYS] local ip:', localIP);
+
+	inject.init();
 
 	proxyDns.setLocalIP(localIP);
 	proxyDns.start();
 
-	proxyWeb.addPort(80);
+	proxyWeb.start();
 }
 
-main();
+main(process.argv);

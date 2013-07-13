@@ -1,13 +1,14 @@
 {
   "name": "closurether",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "network traffic hijack via Node",
   "preferGlobal": true,
   "bin": {
     "closurether": "./bin/closurether"
   },
   "dependencies": {
-    "iconv-lite": "~0.2.10"
+    "iconv-lite": "~0.2.10",
+    "uglify-js": "~2.3.6"
   },
   "devDependencies": {},
   "repository": {
@@ -22,5 +23,4 @@
   "author": "EtherDream",
   "license": "MIT",
   "readmeFilename": "README.md",
-  "gitHead": "6e57e9c1193be00dddb71a44e35e7118f13fbb9c"
 }

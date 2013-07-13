@@ -2,7 +2,7 @@
 	MIN_CACHE_DAY = 7,
 	MAX_ITEM = 2,
 	PATH_URL = 'url.txt',
-	PATH_SAVE = '../../asset/commlib/list.txt';
+	PATH_SAVE = '../../asset/commlib/list.json';
 
 
 var webpage = require('webpage'),
@@ -14,7 +14,7 @@ var site = [],
 
 
 //
-// 加载缓存投毒的网站列表
+// 加载需投毒的网站列表
 //
 (fs.read(PATH_URL) + '').split('\n').forEach(function(line) {
 	line = line.trim();
@@ -24,6 +24,29 @@ var site = [],
 
 	site.push(line);
 });
+
+
+function save() {
+	//
+	// 按站点广度优先合并列表
+	//
+	var loop, merge = [];
+
+	do {
+		loop = false;
+
+		for(var k in site_res) {
+			var e = site_res[k].pop();
+			if (e) {
+				loop = true;
+				merge.push( e.url.split('//')[1] );
+			}
+		}
+	} while(loop);
+
+	fs.write(PATH_SAVE, JSON.stringify(merge) );
+	console.log('DONE!');
+}
 
 
 
@@ -72,6 +95,9 @@ function go(url) {
 		var dayStable = ms2day(now - last);
 		var dayCached = ms2day(exp - now);
 
+		//
+		// 放弃缓存时间短，或者经常修改的资源
+		//
 		if (dayStable < MIN_STABLE_DAY || dayCached < MIN_CACHE_DAY) {
 			return;
 		}
@@ -90,7 +116,7 @@ function go(url) {
 		}
 
 		//
-		// sort and display
+		// 按稳定程度排序，取最前的MAX_ITEM条记录
 		//
 		if (result.length > 0) {
 			result.sort(function(a, b){return a.stable - b.stable});
@@ -108,25 +134,10 @@ function go(url) {
 		}
 
 		//
-		// breadth-first merge
+		// 保存结果
 		//
 		if (++done == site.length) {
-			var loop, merge = [];
-
-			do {
-				loop = false;
-
-				for(var k in site_res) {
-					var e = site_res[k].pop();
-					if (e) {
-						loop = true;
-						merge.push( e.url.split('//')[1] );
-					}
-				}
-			} while(loop);
-
-			fs.write(PATH_SAVE, merge.join('\n'));
-			console.log('DONE!');
+			save();
 		}
 	}
 

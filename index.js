@@ -5,6 +5,7 @@ var proxyDns = require('./proxy_dns.js'),
 	os = require('os');
 
 
+
 function GetLocalIP() {
 	var nifs = os.networkInterfaces();
 
@@ -25,11 +26,11 @@ function GetLocalIP() {
 function main() {
 	var localIP = GetLocalIP();
 	if (!localIP) {
-		console.log('[SYS] can not get local ip!');	
+		console.error('[SYS] cannot get local ip!');
 		return;
 	}
 
-	console.log('[SYS] local ip: ' + localIP);
+	console.log('[SYS] local ip:', localIP);
 
 	proxyDns.setLocalIP(localIP);
 	proxyDns.start();

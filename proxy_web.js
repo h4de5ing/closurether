@@ -1,7 +1,6 @@
 'use strict';
 
-var proxyDns = require('./proxy_dns.js'),
-	inject = require('./inject.js'),
+var inject = require('./inject.js'),
 	http = require('http'),
 	https = require('https'),
 	zlib = require('zlib');
@@ -37,7 +36,7 @@ function proxyResponse(clientReq, clientRes, serverRes) {
 			proxyRequest(clientReq, clientRes);
 			clientReq.emit('end');
 
-			console.log('[WEB] `%s` goto `%s`',
+			console.warn('[WEB] `%s` goto `%s`',
 				clientReq.headers['host'] + clientReq.url,
 				newUrl
 			);
@@ -96,6 +95,11 @@ function proxyResponse(clientReq, clientRes, serverRes) {
 	});
 
 	stream.on('end', function() {
+		if (data.length == 0) {
+			flush();
+			return;
+		}
+
 		//
 		// 整个网页接收完成，注入！
 		//
@@ -109,9 +113,11 @@ function proxyResponse(clientReq, clientRes, serverRes) {
 		if (usrEnc) {
 			if (/gzip/i.test(usrEnc)) {
 				usrEnc = zlib.gzip;
+				resHeader['content-encoding'] = 'gzip';
 			}
 			else if (/deflate/i.test(usrEnc)) {
 				usrEnc = zlib.deflate;
+				resHeader['content-encoding'] = 'deflate';
 			}
 		}
 
@@ -125,7 +131,9 @@ function proxyResponse(clientReq, clientRes, serverRes) {
 		}
 
 		function flush(data) {
-			resHeader['content-length'] = data.length;
+			if (data && data.length > 0) {
+				resHeader['content-length'] = data.length;
+			}
 			clientRes.writeHead(serverRes.statusCode, resHeader);
 			clientRes.end(data);
 		}
@@ -198,7 +206,7 @@ function proxyRequest(clientReq, clientRes) {
 	});
 
 	proxy.on('error', function() {
-		console.log('[WEB] Error', fullUrl);
+		console.error('[WEB] Error', fullUrl);
 		//console.log(reqHeader);
 		clientRes.writeHeader(404);
 		clientRes.end();
@@ -216,9 +224,6 @@ function onClientRequest(clientReq, clientRes) {
 	if (!host) {
 		return;
 	}
-
-	var domain = host.match(/[^:]*/) + '';
-	proxyDns.addWebDomain(domain);
 
 	//
 	// inject code
@@ -262,7 +267,7 @@ exports.addPort = function(port) {
 	});
 
 	svr.on('error', function() {
-		console.log('[WEB] CANNOT listen %d', port);
+		console.error('[WEB] fail listen TCP:%d', port);
 	});
 }
 

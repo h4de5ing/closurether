@@ -1,6 +1,6 @@
 (function() {
 	//
-	// just cache
+	// cache poisoning
 	//
 	var arr = '$LIST'.split('|');
 
@@ -13,5 +13,4 @@
 	}
 
 	preload();
-
 })()

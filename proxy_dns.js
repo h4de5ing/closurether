@@ -164,7 +164,7 @@ server.on("message", function(msg, rAddr) {
 		break;
 	}
 
-	console.log('[DNS] %s\t%s', rAddr.address, domain);
+	console.log('[DNS] %s\tQuery %s', rAddr.address, domain);
 })
 
 

@@ -264,15 +264,44 @@ function onHttpRequest(clientReq, clientRes) {
  * 客户端HTTPS请求
  */
 function onHttpsRequest(usr) {
-	usr.once('data', function(data) {
-		// 分析host字段
-		var host = 'i.alipayobjects.com';
-		console.warn('[WEB] ssl request `%s`', host);
+	var proxy;
+	var connected;
 
-		var s = net.connect(443, host, function() {
-			this.write(data);
-			usr.pipe(this);
-		});
+	var buf = new Buffer(0);
+
+	usr.on('data', function(chunk) {
+		if (!connected) {
+			buf = Buffer.concat([buf, chunk]);
+		}
+
+		if (!proxy) {
+			//
+			// 分析host字段（暂时用正则）
+			//
+			var r = buf.toString().match(/[\w.-]+\.[\w]{2,}/);
+			if (!r) {
+				console.error('[WEB] bad ssl');
+				this.destroy();
+				return;
+			}
+
+			var host = r[0];
+
+			console.warn('[WEB] ssl request `%s`', host);
+
+			proxy = net.connect(443, host, function() {
+				connected = true;
+				this.write(buf);
+				buf = null;
+
+				this.pipe(usr);
+				usr.pipe(this);
+			});
+
+			proxy.on('error', function() {
+				console.error('== https proxy error ====');
+			});
+		}
 	});
 }
 

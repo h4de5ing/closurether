@@ -143,7 +143,7 @@ exports.injectHtml = function(html, charset) {
 	//
 	// 替换页面中的https链接为http，并做记录
 	//
-	html = html.replace(/https:\/\/([\w\.\-\/_?%&=+,]*)/g, function(str, url) {
+	html = html.replace(/https:\/\/([\w\-./?%&=+,]{4,})/g, function(str, url) {
 		proxyWeb.addHttpsUrl(url);
 		return 'http://' + url;
 	});

@@ -1,7 +1,8 @@
-closurether 0.1.1 By EtherDream
+closurether 0.1.2 By EtherDream
 
 usage: 
    closurether [options]
 
 options:
-   -d --debug          Debug Mode
+   -d, --debug          Debug mode
+   -h, --help           Show help

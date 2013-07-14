@@ -116,10 +116,10 @@ exports.injectHtml = function(html, charset) {
 	//
 	// 优先使用<meta>标签里的charset标记：
 	//   <meta charset="utf-8" />
-	//   <META HTTP-EQUIV="Content-Type" CONTENT='text/html; CHARSET=GBK'>
+	//   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=GBK">
 	//
 	var str = html.toString();
-	var val = str.match(/charset=['"]?([\w\-]*)/i);
+	var val = str.match(/<meta[^>]+charset=['"]?([\w\-]*)/i);
 
 	if (val && val[1]) {
 		charset = val[1];

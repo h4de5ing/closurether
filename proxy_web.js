@@ -298,11 +298,17 @@ function onHttpsRequest(usr) {
 				usr.pipe(this);
 			});
 
-			proxy.on('error', function() {
-				console.error('== https proxy error ====');
-			});
+			proxy.on('error', onError);
 		}
 	});
+
+	usr.on('error', onError);
+
+	function onError() {
+		console.error('== https stream error ====');
+		usr.destroy();
+		proxy.destroy();
+	}
 }
 
 

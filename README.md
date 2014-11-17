@@ -9,6 +9,8 @@ Closurether
 
 ##### Description:
 
+http://lcx.cc/?i=4426
+
 http://www.cnblogs.com/index-html/p/wifi_hijack_2.html
 
 http://www.cnblogs.com/index-html/p/wifi_hijack_3.html
